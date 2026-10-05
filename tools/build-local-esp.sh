@@ -6,7 +6,6 @@ mkdir -p GRUB2/SRC GRUB2/NBP
 if [[ ! -f GRUB2/grub-2.04.tar.xz ]]; then
     curl --fail --location --retry 3 https://ftp.gnu.org/gnu/grub/grub-2.04.tar.xz -o GRUB2/grub-2.04.tar.xz
 fi
- 
 # Record the downloaded source hash in the build log.
 sha256sum GRUB2/grub-2.04.tar.xz
 tar -xf GRUB2/grub-2.04.tar.xz -C GRUB2/SRC
