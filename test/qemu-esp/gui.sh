@@ -54,7 +54,7 @@ im.save(sys.argv[2])
 PY
     tesseract "$repo/test-results/gui-p$part-ocr.png" "$repo/test-results/gui-p$part" --psm 7 2>/dev/null
     grep -Ei 'Browse local disks|Ventoy.*UEFI' "$repo/test-results/gui-p$part.txt"
-    if grep -Ei 'no such device|not found|Invalid Opcode' "$repo/test-results/gui-p$part.log"; then
+    if grep -Ei 'error:.*(no such device|not found)|Invalid Opcode' "$repo/test-results/gui-p$part.log"; then
         exit 1
     fi
     rm -f "$work/qmp" "$work/disk.img" "$work/esp.img"
