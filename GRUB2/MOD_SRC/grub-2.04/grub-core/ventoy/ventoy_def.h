@@ -1216,7 +1216,13 @@ int ventoy_unregister_all_cmd(void);
 int ventoy_chain_file_size(const char *path);
 int ventoy_chain_file_read(const char *path, int offset, int len, void *buf);
 
-#define VTOY_CMD_CHECK(a) if (33554432 != g_ventoy_disk_part_size[a]) ventoy_syscall0(exit)
+int ventoy_is_esp_mode(void);
+const char *ventoy_get_runtime_device(void);
+const char *ventoy_get_runtime_prefix(void);
+grub_file_t ventoy_runtime_open(const char *relative_path);
+int ventoy_runtime_file_exists(const char *relative_path);
+
+#define VTOY_CMD_CHECK(a) if (!ventoy_is_esp_mode() && 33554432 != g_ventoy_disk_part_size[a]) ventoy_syscall0(exit)
 
 #define vtoy_theme_random_boot_second  0
 #define vtoy_theme_random_boot_day     1

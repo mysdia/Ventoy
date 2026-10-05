@@ -555,6 +555,70 @@ static int ventoy_set_check_result(int ret, const char *msg)
     return ret;
 }
 
+/* Local ESP runtime availability, independent of the host disk layout. */
+static int g_ventoy_esp_runtime_valid = 0;
+
+int ventoy_is_esp_mode(void)
+{
+    return g_ventoy_esp_runtime_valid;
+}
+
+const char *ventoy_get_runtime_device(void)
+{
+    return grub_env_get("vtoy_runtime_dev");
+}
+
+const char *ventoy_get_runtime_prefix(void)
+{
+    return grub_env_get("vtoy_runtime_prefix");
+}
+
+grub_file_t ventoy_runtime_open(const char *relative_path)
+{
+    const char *dev = ventoy_get_runtime_device();
+    const char *prefix = ventoy_get_runtime_prefix();
+    if (!dev || !prefix)
+        return NULL;
+    return ventoy_grub_file_open(VENTOY_FILE_TYPE, "(%s)%s%s", dev, prefix, relative_path);
+}
+
+int ventoy_runtime_file_exists(const char *relative_path)
+{
+    grub_file_t file = ventoy_runtime_open(relative_path);
+    if (!file)
+    {
+        grub_errno = 0;
+        return 0;
+    }
+    grub_file_close(file);
+    return 1;
+}
+
+static int ventoy_validate_esp_runtime(void)
+{
+#if defined(GRUB_MACHINE_EFI) && defined(__x86_64__)
+    const char *mode = grub_env_get("vtoy_esp_mode");
+    const char *prefix = ventoy_get_runtime_prefix();
+    grub_file_t file;
+    if (!mode || grub_strcmp(mode, "1") || !prefix ||
+        grub_strcmp(prefix, "/ventoy-local"))
+        return 0;
+    file = ventoy_runtime_open("/ventoy/ventoy.cpio");
+    if (!file)
+        return 0;
+    grub_file_close(file);
+    if (
+        !ventoy_runtime_file_exists("/grub/grub.cfg") ||
+        !ventoy_runtime_file_exists("/grub/localboot.cfg"))
+        return 0;
+    g_ventoy_esp_runtime_valid = 1;
+    grub_printf("[Ventoy-ESP] runtime validated; standard disk layout not required\n");
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 static int ventoy_check_official_device(grub_device_t dev)
 {
     int workaround = 0;
@@ -5101,6 +5165,7 @@ int ventoy_load_part_table(const char *diskname)
     grub_disk_t disk;
     grub_device_t dev;
 
+    grub_free(g_ventoy_part_info);
     g_ventoy_part_info = grub_zalloc(sizeof(ventoy_gpt_info));
     if (!g_ventoy_part_info)
     {
@@ -5120,6 +5185,18 @@ int ventoy_load_part_table(const char *diskname)
 
     grub_disk_read(disk, 0, 0, sizeof(ventoy_gpt_info), g_ventoy_part_info);
     grub_disk_close(disk);
+
+    if (ventoy_validate_esp_runtime())
+    {
+        g_ventoy_disk_part_size[0] = ventoy_get_vtoy_partsize(0);
+        g_ventoy_disk_part_size[1] = ventoy_get_vtoy_partsize(1);
+        return ventoy_set_check_result(0, NULL);
+    }
+    if (grub_env_get("vtoy_esp_mode") &&
+        grub_strcmp(grub_env_get("vtoy_esp_mode"), "1") == 0)
+    {
+        return ventoy_set_check_result(13, "Local ESP runtime validation failed");
+    }
 
     grub_snprintf(name, sizeof(name), "%s,1", diskname);
     dev = grub_device_open(name);

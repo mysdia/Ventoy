@@ -149,7 +149,7 @@ static int ventoy_browser_iterate_partition(struct grub_disk *disk, const grub_p
 
     (void)data;
 
-    if (partition->number == 1 && g_vtoy_dev && grub_strcmp(disk->name, g_vtoy_dev) == 0)
+    if (!ventoy_is_esp_mode() && partition->number == 1 && g_vtoy_dev && grub_strcmp(disk->name, g_vtoy_dev) == 0)
     {
         return 0;
     }
