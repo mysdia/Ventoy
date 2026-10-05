@@ -4,7 +4,14 @@ cd "$(dirname "$0")/.."
 repo=$PWD
 mkdir -p GRUB2/SRC GRUB2/NBP
 if [[ ! -f GRUB2/grub-2.04.tar.xz ]]; then
-    curl --fail --location --retry 3 https://ftp.gnu.org/gnu/grub/grub-2.04.tar.xz -o GRUB2/grub-2.04.tar.xz
+    for base in https://ftp.gnu.org/gnu https://mirrors.kernel.org/gnu https://mirrors.ocf.berkeley.edu/gnu; do
+        if curl --fail --location --connect-timeout 15 --max-time 120 --retry 1 \
+            "$base/grub/grub-2.04.tar.xz" -o GRUB2/grub-2.04.tar.xz.tmp; then
+            mv GRUB2/grub-2.04.tar.xz.tmp GRUB2/grub-2.04.tar.xz
+            break
+        fi
+    done
+    test -s GRUB2/grub-2.04.tar.xz
 fi
 # Record the downloaded source hash in the build log.
 sha256sum GRUB2/grub-2.04.tar.xz
