@@ -22,6 +22,7 @@ mkdir -p INSTALL_LOCAL_ESP/EFI/Ventoy INSTALL_LOCAL_ESP/ventoy-local
 cp INSTALL/EFI/BOOT/grubx64_real.efi INSTALL_LOCAL_ESP/EFI/Ventoy/BOOTX64.EFI
 cp INSTALL/EFI/BOOT/grubx64_real.efi INSTALL_LOCAL_ESP/EFI/Ventoy/grubx64_real.efi
 cp -a INSTALL/grub INSTALL/ventoy INSTALL/tool INSTALL_LOCAL_ESP/ventoy-local/
+cp GRUB2/ventoy_esp_bootstrap.cfg INSTALL_LOCAL_ESP/ventoy-local/grub/esp-bootstrap.cfg
 printf 'VENTOY_LOCAL_ESP_V1\n' > INSTALL_LOCAL_ESP/ventoy-local/ventoy/ventoy.esp.marker
 find INSTALL_LOCAL_ESP -type f -print0 | sort -z | xargs -0 sha256sum > local-esp.sha256
 printf 'commit=%s\n' "$(git rev-parse HEAD)" > local-esp-build.txt
