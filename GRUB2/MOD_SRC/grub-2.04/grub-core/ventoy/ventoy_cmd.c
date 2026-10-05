@@ -2814,6 +2814,14 @@ static grub_err_t ventoy_cmd_set_fake_vlnk(grub_extcmd_context_t ctxt, int argc,
     g_fake_vlnk_size = (grub_uint64_t)grub_strtoull(args[2], NULL, 10);
 
     grub_strncpy(g_fake_vlnk_dst, args[0], sizeof(g_fake_vlnk_dst));
+    /* Local browser can run without vt_list_img; initialize its virtual source root. */
+    if (!g_iso_path[0])
+    {
+        const char *isopart = grub_env_get("vtoy_iso_part");
+        if (!isopart || !isopart[0])
+            return grub_error(GRUB_ERR_BAD_ARGUMENT, "Image filesystem not initialized");
+        grub_snprintf(g_iso_path, sizeof(g_iso_path), "%s", isopart);
+    }
     grub_snprintf(g_fake_vlnk_src, sizeof(g_fake_vlnk_src), "%s/________VENTOYVLNK.vlnk.%s", g_iso_path, args[1]);
 
     grub_file_vtoy_vlnk(g_fake_vlnk_src, g_fake_vlnk_dst);
