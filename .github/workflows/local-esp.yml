@@ -19,9 +19,9 @@ jobs:
         run: |
           set -o pipefail
           bash tools/build-local-esp.sh 2>&1 | tee local-esp-build.log
-      - name: QEMU OVMF smoke test (ESP partition 1 and 3)
+      - name: Cold-boot ESP initialization and real VLNK parse/redirect/reject (p1 and p3)
         run: bash test/qemu-esp/smoke.sh
-      - name: Explicit EFI Ventoy path and graphical menu capture
+      - name: Explicit EFI Ventoy path and Browse local disks OCR
         run: bash test/qemu-esp/gui.sh
       - uses: actions/upload-artifact@v4
         if: always()

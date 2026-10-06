@@ -246,6 +246,16 @@ static int ventoy_control_get_flag(const char *key)
     return 0;
 }
 
+void ventoy_init_file_filter(void)
+{
+    g_vtoy_file_flt[VTOY_FILE_FLT_ISO]  = ventoy_control_get_flag("VTOY_FILE_FLT_ISO");
+    g_vtoy_file_flt[VTOY_FILE_FLT_WIM]  = ventoy_control_get_flag("VTOY_FILE_FLT_WIM");
+    g_vtoy_file_flt[VTOY_FILE_FLT_EFI]  = ventoy_control_get_flag("VTOY_FILE_FLT_EFI");
+    g_vtoy_file_flt[VTOY_FILE_FLT_IMG]  = ventoy_control_get_flag("VTOY_FILE_FLT_IMG");
+    g_vtoy_file_flt[VTOY_FILE_FLT_VHD]  = ventoy_control_get_flag("VTOY_FILE_FLT_VHD");
+    g_vtoy_file_flt[VTOY_FILE_FLT_VTOY] = ventoy_control_get_flag("VTOY_FILE_FLT_VTOY");
+}
+
 static grub_err_t ventoy_fs_close(grub_file_t file)
 {
     grub_file_close(g_old_file);
@@ -1749,10 +1759,12 @@ static int ventoy_vlnk_iterate_partition(struct grub_disk *disk, const grub_part
     ventoy_vlnk_part *node = NULL;
     grub_uint32_t SelfSig;
     grub_uint32_t *pSig = (grub_uint32_t *)data;
+    const char *vtoydev = grub_env_get("vtoydev");
 
     /* skip Ventoy partition 1/2 */
     grub_memcpy(&SelfSig, g_ventoy_part_info->MBR.BootCode + 0x1b8, 4);
-    if (!ventoy_is_esp_mode() && partition->number < 2 && SelfSig == *pSig)
+    if (!ventoy_is_esp_mode() && partition->number < 2 && SelfSig == *pSig &&
+        vtoydev && grub_strcmp(disk->name, vtoydev) == 0)
     {
         return 0;
     }
@@ -1775,15 +1787,21 @@ static int ventoy_vlnk_iterate_partition(struct grub_disk *disk, const grub_part
 static int ventoy_vlnk_iterate_disk(const char *name, void *data)
 {
     grub_disk_t disk;
-    grub_uint32_t sig;
+    grub_uint32_t sig = 0;
 
     (void)data;
 
     disk = grub_disk_open(name);
     if (disk)
     {
-        grub_disk_read(disk, 0, 0x1b8, 4, &sig);
-        grub_partition_iterate(disk, ventoy_vlnk_iterate_partition, &sig);
+        if (grub_disk_read(disk, 0, 0x1b8, 4, &sig) == GRUB_ERR_NONE)
+        {
+            grub_partition_iterate(disk, ventoy_vlnk_iterate_partition, &sig);
+        }
+        else
+        {
+            grub_errno = GRUB_ERR_NONE;
+        }
         grub_disk_close(disk);
     }
 
@@ -1843,10 +1861,40 @@ static int ventoy_check_vlnk_data(ventoy_vlnk *vlnk, int print, char *dst, int s
         return 1;
     }
 
+    if (vlnk->filepath[0] != '/' ||
+        !grub_memchr(vlnk->filepath, 0, sizeof(vlnk->filepath)))
+    {
+        if (print)
+        {
+            grub_printf("VLNK invalid file path\n");
+            grub_refresh();
+        }
+        return 1;
+    }
+
     if (!g_vlnk_part_list)
     {
         grub_disk_dev_iterate(ventoy_vlnk_iterate_disk, NULL);
     }
+
+    /* A signature and partition offset must identify a single target. */
+    for (cur = g_vlnk_part_list; cur; cur = cur->next)
+    {
+        if (cur->disksig == vlnk->disk_signature && cur->partoffset == vlnk->part_offset)
+        {
+            if (partfind)
+            {
+                if (print)
+                {
+                    grub_printf("VLNK ambiguous target\n");
+                    grub_refresh();
+                }
+                return 1;
+            }
+            partfind = 1;
+        }
+    }
+    partfind = 0;
 
     for (cur = g_vlnk_part_list; cur && filefind == 0; cur = cur->next)
     {
@@ -3037,12 +3085,7 @@ static grub_err_t ventoy_cmd_list_img(grub_extcmd_context_t ctxt, int argc, char
         }
     }
 
-    g_vtoy_file_flt[VTOY_FILE_FLT_ISO]  = ventoy_control_get_flag("VTOY_FILE_FLT_ISO");
-    g_vtoy_file_flt[VTOY_FILE_FLT_WIM]  = ventoy_control_get_flag("VTOY_FILE_FLT_WIM");
-    g_vtoy_file_flt[VTOY_FILE_FLT_EFI]  = ventoy_control_get_flag("VTOY_FILE_FLT_EFI");
-    g_vtoy_file_flt[VTOY_FILE_FLT_IMG]  = ventoy_control_get_flag("VTOY_FILE_FLT_IMG");
-    g_vtoy_file_flt[VTOY_FILE_FLT_VHD]  = ventoy_control_get_flag("VTOY_FILE_FLT_VHD");
-    g_vtoy_file_flt[VTOY_FILE_FLT_VTOY] = ventoy_control_get_flag("VTOY_FILE_FLT_VTOY");
+    ventoy_init_file_filter();
 
     for (node = &g_img_iterator_head; node; node = node->next)
     {
@@ -6149,8 +6192,7 @@ static grub_err_t grub_cmd_get_vlnk_dst(grub_extcmd_context_t ctxt, int argc, ch
         {
             debug("VLNK SRC: <%s>\n", args[0]);
             debug("VLNK DST: <%s>\n", name);
-            grub_env_set(args[1], name);
-            return 0;
+            return grub_env_set(args[1], name);
         }
 
         /* Custom menus may reference a link that was never enumerated. */
@@ -6170,8 +6212,13 @@ static grub_err_t grub_cmd_get_vlnk_dst(grub_extcmd_context_t ctxt, int argc, ch
             grub_file_close(file);
             if (ventoy_check_vlnk_data(&link, 1, dst, sizeof(dst)) == 0)
             {
-                grub_env_set(args[1], dst);
-                return 0;
+                if (grub_strlen(args[0]) >= 512)
+                    return grub_error(GRUB_ERR_BAD_ARGUMENT, "VLNK source path too long");
+                if (grub_file_add_vlnk(args[0], dst) != 0)
+                {
+                    return grub_error(GRUB_ERR_OUT_OF_MEMORY, "Failed to register VLNK");
+                }
+                return grub_env_set(args[1], dst);
             }
         }
     }

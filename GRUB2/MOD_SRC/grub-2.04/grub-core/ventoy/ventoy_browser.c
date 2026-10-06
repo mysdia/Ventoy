@@ -515,10 +515,13 @@ grub_err_t ventoy_cmd_browser_dir(grub_extcmd_context_t ctxt, int argc, char **a
     (void)ctxt;
     (void)argc;
 
+    ventoy_init_file_filter();
+
     if (args[2][0] == '/' && args[2][1] == 0)
     {
         grub_snprintf(cfgfile, sizeof(cfgfile), "(%s)", args[0]);
-        if (grub_strcmp(cfgfile, g_iso_path) == 0)
+        if (grub_strcmp(cfgfile, g_iso_path) == 0 && g_ventoy_img_list &&
+            g_tree_script_buf && g_tree_script_pre >= 0 && g_tree_script_pos > g_tree_script_pre)
         {
             return ventoy_browser_iso_part();
         }
@@ -626,6 +629,7 @@ grub_err_t ventoy_cmd_browser_disk(grub_extcmd_context_t ctxt, int argc, char **
         return 1;
     }
 
+    ventoy_init_file_filter();
     g_vtoy_dev = grub_env_get("vtoydev");
 
     if (g_tree_view_menu_style == 0)

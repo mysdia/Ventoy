@@ -1332,6 +1332,7 @@ extern int g_filt_trash_dir;
 extern int g_vtoy_file_flt[VTOY_FILE_FLT_BUTT];
 extern const char *g_menu_class[img_type_max];
 extern char g_iso_path[256];
+void ventoy_init_file_filter(void);
 int ventoy_add_vlnk_file(char *dir, const char *name);
 grub_err_t ventoy_cmd_browser_dir(grub_extcmd_context_t ctxt, int argc, char **args);
 grub_err_t ventoy_cmd_browser_disk(grub_extcmd_context_t ctxt, int argc, char **args);

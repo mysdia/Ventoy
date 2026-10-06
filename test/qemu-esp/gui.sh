@@ -53,7 +53,7 @@ im = im.point(lambda x: 0 if x > 185 else 255).resize((2220, 87))
 im.save(sys.argv[2])
 PY
     tesseract "$repo/test-results/gui-p$part-ocr.png" "$repo/test-results/gui-p$part" --psm 7 2>/dev/null
-    grep -Ei 'Browse local disks|Ventoy.*UEFI' "$repo/test-results/gui-p$part.txt"
+    grep -Fi 'Browse local disks' "$repo/test-results/gui-p$part.txt"
     if grep -Ei 'error:.*(no such device|not found)|Invalid Opcode' "$repo/test-results/gui-p$part.log"; then
         exit 1
     fi
