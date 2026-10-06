@@ -45,7 +45,14 @@ command('quit')
 PY
     wait "$pid"
     pid=
-    tesseract "$repo/test-results/gui-p$part.ppm" "$repo/test-results/gui-p$part" --psm 11 2>/dev/null
+    python3 - "$repo/test-results/gui-p$part.ppm" "$repo/test-results/gui-p$part-ocr.png" <<'PY'
+from PIL import Image
+import sys
+im = Image.open(sys.argv[1]).crop((140, 263, 880, 292)).convert('L')
+im = im.point(lambda x: 0 if x > 185 else 255).resize((2220, 87))
+im.save(sys.argv[2])
+PY
+    tesseract "$repo/test-results/gui-p$part-ocr.png" "$repo/test-results/gui-p$part" --psm 7 2>/dev/null
     grep -Ei 'Browse local disks|Ventoy.*UEFI' "$repo/test-results/gui-p$part.txt"
     if grep -Ei 'no such device|not found|Invalid Opcode' "$repo/test-results/gui-p$part.log"; then
         exit 1

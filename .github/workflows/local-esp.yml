@@ -14,7 +14,7 @@ jobs:
       - name: Install GRUB build and QEMU dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential autoconf automake autopoint gettext libtool bison flex python3 libfreetype6-dev liblzma-dev texinfo pkg-config qemu-system-x86 ovmf dosfstools mtools gdisk ntfs-3g grub-efi-amd64-bin tesseract-ocr
+          sudo apt-get install -y build-essential autoconf automake autopoint gettext libtool bison flex python3 libfreetype6-dev liblzma-dev texinfo pkg-config qemu-system-x86 ovmf dosfstools mtools gdisk ntfs-3g grub-efi-amd64-bin tesseract-ocr python3-pil
       - name: Compile patched GRUB and package local ESP runtime
         run: |
           set -o pipefail
