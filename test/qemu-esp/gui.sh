@@ -11,7 +11,7 @@ for part in 1 3; do
     cp -a INSTALL_LOCAL_ESP/. "$work/stage/"
     printf 'search --file --set=root /EFI/Ventoy/BOOTX64.EFI\nchainloader /EFI/Ventoy/BOOTX64.EFI\nboot\n' > "$work/launcher.cfg"
     # Stock GRUB is only a disposable firmware launcher, not the tested Ventoy.
-    grub-mkstandalone -O x86_64-efi -o "$work/stage/EFI/BOOT/BOOTX64.EFI" "boot/grub/grub.cfg=$work/launcher.cfg"
+    grub-mkstandalone -O x86_64-efi --modules='part_gpt fat search search_fs_file chain' -o "$work/stage/EFI/BOOT/BOOTX64.EFI" "boot/grub/grub.cfg=$work/launcher.cfg"
     truncate -s 128M "$work/esp.img"
     mkfs.vfat -F32 "$work/esp.img"
     mcopy -s -i "$work/esp.img" "$work/stage"/* ::/
@@ -45,5 +45,10 @@ command('quit')
 PY
     wait "$pid"
     pid=
+    tesseract "$repo/test-results/gui-p$part.ppm" "$repo/test-results/gui-p$part" 2>/dev/null
+    grep -Ei 'Browse local disks|Ventoy.*UEFI' "$repo/test-results/gui-p$part.txt"
+    if grep -Ei 'no such device|not found|Invalid Opcode' "$repo/test-results/gui-p$part.log"; then
+        exit 1
+    fi
     rm -f "$work/qmp" "$work/disk.img" "$work/esp.img"
 done
