@@ -1752,7 +1752,7 @@ static int ventoy_vlnk_iterate_partition(struct grub_disk *disk, const grub_part
 
     /* skip Ventoy partition 1/2 */
     grub_memcpy(&SelfSig, g_ventoy_part_info->MBR.BootCode + 0x1b8, 4);
-    if (partition->number < 2 && SelfSig == *pSig)
+    if (!ventoy_is_esp_mode() && partition->number < 2 && SelfSig == *pSig)
     {
         return 0;
     }
@@ -6151,6 +6151,28 @@ static grub_err_t grub_cmd_get_vlnk_dst(grub_extcmd_context_t ctxt, int argc, ch
             debug("VLNK DST: <%s>\n", name);
             grub_env_set(args[1], name);
             return 0;
+        }
+
+        /* Custom menus may reference a link that was never enumerated. */
+        if (ventoy_is_esp_mode() && grub_file_is_vlnk_suffix(args[0], grub_strlen(args[0])))
+        {
+            grub_file_t file;
+            ventoy_vlnk link;
+            char dst[512];
+            file = grub_file_open(args[0], VENTOY_FILE_TYPE | GRUB_FILE_TYPE_NO_VLNK);
+            if (!file)
+                return 1;
+            if (file->size != 32768 || grub_file_read(file, &link, sizeof(link)) != sizeof(link))
+            {
+                grub_file_close(file);
+                return grub_error(GRUB_ERR_BAD_ARGUMENT, "Invalid VLNK file");
+            }
+            grub_file_close(file);
+            if (ventoy_check_vlnk_data(&link, 1, dst, sizeof(dst)) == 0)
+            {
+                grub_env_set(args[1], dst);
+                return 0;
+            }
         }
     }
 
