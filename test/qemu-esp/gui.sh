@@ -45,7 +45,7 @@ command('quit')
 PY
     wait "$pid"
     pid=
-    tesseract "$repo/test-results/gui-p$part.ppm" "$repo/test-results/gui-p$part" 2>/dev/null
+    tesseract "$repo/test-results/gui-p$part.ppm" "$repo/test-results/gui-p$part" --psm 11 2>/dev/null
     grep -Ei 'Browse local disks|Ventoy.*UEFI' "$repo/test-results/gui-p$part.txt"
     if grep -Ei 'no such device|not found|Invalid Opcode' "$repo/test-results/gui-p$part.log"; then
         exit 1
