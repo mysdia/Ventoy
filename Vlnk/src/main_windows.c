@@ -98,7 +98,7 @@ static int VtoyMessageBox
     _In_ UINT uType
 )
 {
-    if (g_CmdInFile[0] && g_CmdOutFile[0])
+    if (g_CmdInFile[0])
     {
         return 0;
     }
@@ -925,10 +925,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     if (g_ShowHelp)
     {
-        VtoyMessageBox(NULL, L"VentoyVlnk.exe  CMD\r\n  -i  Input file path\r\n  -o  Output vlnk file path\r\n  -q  Quite mode (no log)", L"Tip", MB_OK);
+        VtoyMessageBox(NULL, L"VentoyVlnk.exe  CMD\r\n  -i  Input file path\r\n  -o  Optional output path (default: beside input)\r\n  -q  Quite mode (no log)", L"Tip", MB_OK);
         return 0;
     }
-    else if (g_CmdInFile[0] && g_CmdOutFile[0])
+    else if (g_CmdInFile[0])
     {
         LogA("========= VentoyVlnk Cmdline Mode =========\n");
 
@@ -938,6 +938,23 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             LogW(L"File <<%ls>> does not exist!\n", g_CmdInFile);
             VtoyMessageBox(NULL, g_msg_lang[MSGID_SRC_NONEXIST], g_msg_lang[MSGID_ERROR], MB_OK | MB_ICONERROR);
             return 1;
+        }
+
+        if (!g_CmdOutFile[0])
+        {
+            WCHAR FullPath[MAX_PATH];
+            WCHAR FileName[MAX_PATH];
+            WCHAR *FilePart = NULL;
+            DWORD PathLen = GetFullPathNameW(g_CmdInFile, MAX_PATH, FullPath, &FilePart);
+            if (!PathLen || PathLen >= MAX_PATH || !FilePart ||
+                PathLen + 10 >= MAX_PATH)
+            {
+                LogA("Input path too long or invalid for automatic output name\n");
+                return 1;
+            }
+            wcscpy_s(FileName, MAX_PATH, FilePart);
+            FilePart[-1] = 0;
+            DefaultVlnkDstFullPath(FileName, FullPath, g_CmdOutFile);
         }
 
         if (!IsSupportedVlnkSuffix(g_CmdOutFile))
