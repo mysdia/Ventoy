@@ -1939,7 +1939,7 @@ static int ventoy_check_vlnk_data(ventoy_vlnk *vlnk, int print, char *dst, int s
         }
     }
 
-    if (print)
+    if (print && !filefind)
     {
         grub_printf("\n==== VLNK Information ====\n"
                     "Disk Signature: %08x\n"
