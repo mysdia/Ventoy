@@ -296,6 +296,12 @@ static int DefaultVlnkDstFullPath(WCHAR *Src, WCHAR *Dir, WCHAR *Dst)
     {
         if (Src[i] == '.')
         {
+            if (_wcsicmp(Src + i, L".vdi") == 0)
+            {
+                swprintf_s(Dst, MAX_PATH, L"%ls\\%ls.vlnk.vtoy", Dir, Src);
+                break;
+            }
+
             C = Src[i];
             Src[i] = 0;
             wrlen = swprintf_s(Dst, MAX_PATH, L"%ls\\%ls.vlnk.%ls", Dir, Src, Src + i + 1);
@@ -446,7 +452,7 @@ static int CreateVlnk(HWND hWnd, WCHAR *Dir, WCHAR *InFile, WCHAR *OutFile)
         ofn.hwndOwner = hWnd;
         ofn.lpstrFile = szFile;
         ofn.nMaxFile = sizeof(szFile);
-        ofn.lpstrFilter = L"Vlnk Source File\0*.iso;*.img;*.wim;*.vhd;*.vhdx;*.vtoy;*.efi;*.dat\0";
+        ofn.lpstrFilter = L"Vlnk Source File\0*.iso;*.img;*.wim;*.vhd;*.vhdx;*.vdi;*.vtoy;*.efi;*.dat\0";
         ofn.nFilterIndex = 1;
         ofn.lpstrFileTitle = NULL;
         ofn.nMaxFileTitle = 0;

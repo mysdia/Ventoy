@@ -53,7 +53,7 @@ int IsSupportedImgSuffix(char *suffix)
     int i = 0;
     const char *suffixs[] =
     {
-        ".iso", ".img", ".wim", ".efi", ".vhd", ".vhdx", ".dat", ".vtoy", NULL
+        ".iso", ".img", ".wim", ".efi", ".vhd", ".vhdx", ".vdi", ".dat", ".vtoy", NULL
     };
 
     if (!suffix)

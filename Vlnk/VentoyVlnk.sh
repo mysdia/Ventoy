@@ -103,7 +103,7 @@ if [ "$CMD" = "c" ]; then
         exit 1
     fi
     
-    if echo $IMG | grep -E -q -i '.*(.iso|.img|.wim|.vhd|.vhdx|.efi|.vtoy|.dat)$'; then
+    if echo $IMG | grep -E -q -i '.*(.iso|.img|.wim|.vhd|.vhdx|.vdi|.efi|.vtoy|.dat)$'; then
         :
     else
         echo "This file is not supported for vlnk!"
@@ -226,10 +226,15 @@ if [ "$CMD" = "c" ]; then
     
     if [ -n "$OUT" ]; then
         lowersuffix=$(echo ${IMG##*.} | tr 'A-Z' 'a-z')        
+        [ "$lowersuffix" = "vdi" ] && lowersuffix=vtoy
         OUT="${OUT}.vlnk.${lowersuffix}"
     else
         name=${IMGFILE%.*}
         lowersuffix=$(echo ${IMGFILE##*.} | tr 'A-Z' 'a-z')
+        if [ "$lowersuffix" = "vdi" ]; then
+            name=$IMGFILE
+            lowersuffix=vtoy
+        fi
         OUT="${name}.vlnk.${lowersuffix}"
     fi
 
